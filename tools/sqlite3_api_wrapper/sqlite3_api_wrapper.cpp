@@ -19,6 +19,7 @@
 #include <chrono>
 #include <cassert>
 #include <climits>
+#include <thread>
 
 using namespace duckdb;
 using namespace std;
@@ -89,9 +90,12 @@ int sqlite3_open_v2(const char *filename, /* Database filename (UTF-8) */
 	try {
 		pDb = new sqlite3();
 		DBConfig config;
-		config.access_mode = AccessMode::AUTOMATIC;
+		config.options.access_mode = AccessMode::AUTOMATIC;
 		if (flags & SQLITE_OPEN_READONLY) {
-			config.access_mode = AccessMode::READ_ONLY;
+			config.options.access_mode = AccessMode::READ_ONLY;
+		}
+		if (flags & DUCKDB_UNSIGNED_EXTENSIONS) {
+			config.options.allow_unsigned_extensions = true;
 		}
 		pDb->db = make_unique<DuckDB>(filename, &config);
 		pDb->con = make_unique<Connection>(*pDb->db);
@@ -764,7 +768,7 @@ const char *sqlite3_errmsg(sqlite3 *db) {
 }
 
 void sqlite3_interrupt(sqlite3 *db) {
-	if (db) {
+	if (db && db->con) {
 		db->con->Interrupt();
 	}
 }
@@ -1080,8 +1084,17 @@ int sqlite3_stmt_status(sqlite3_stmt *, int op, int resetFlg) {
 	return -1;
 }
 
-int sqlite3_file_control(sqlite3 *, const char *zDbName, int op, void *) {
-	fprintf(stderr, "sqlite3_file_control: unsupported.\n");
+int sqlite3_file_control(sqlite3 *, const char *zDbName, int op, void *ptr) {
+	switch (op) {
+	case SQLITE_FCNTL_TEMPFILENAME: {
+		auto char_arg = (char **)ptr;
+		*char_arg = nullptr;
+		return -1;
+	}
+	default:
+		break;
+	}
+	fprintf(stderr, "sqlite3_file_control op %d: unsupported.\n", op);
 	return -1;
 }
 
@@ -1095,9 +1108,9 @@ const char *sqlite3_vtab_collation(sqlite3_index_info *, int) {
 	return nullptr;
 }
 
-int sqlite3_sleep(int) {
-	fprintf(stderr, "sqlite3_sleep: unsupported.\n");
-	return -1;
+int sqlite3_sleep(int ms) {
+	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+	return ms;
 }
 
 int sqlite3_busy_timeout(sqlite3 *, int ms) {

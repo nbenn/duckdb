@@ -10,7 +10,8 @@
 
 using namespace duckdb;
 
-[[cpp11::register]] void rapi_register_df(duckdb::conn_eptr_t conn, std::string name, cpp11::data_frame value) {
+[[cpp11::register]] void rapi_register_df(duckdb::conn_eptr_t conn, std::string name, cpp11::data_frame value,
+                                          bool integer64) {
 	if (!conn || !conn->conn) {
 		cpp11::stop("rapi_register_df: Invalid connection");
 	}
@@ -21,7 +22,9 @@ using namespace duckdb;
 		cpp11::stop("rapi_register_df: Data frame with at least one column required");
 	}
 	try {
-		conn->conn->TableFunction("r_dataframe_scan", {Value::POINTER((uintptr_t)value.data())})
+		named_parameter_map_t parameter_map;
+		parameter_map["integer64"] = Value::BOOLEAN(integer64);
+		conn->conn->TableFunction("r_dataframe_scan", {Value::POINTER((uintptr_t)value.data())}, parameter_map)
 		    ->CreateView(name, true, true);
 		static_cast<cpp11::sexp>(conn).attr("_registered_df_" + name) = value;
 	} catch (std::exception &e) {
@@ -47,7 +50,7 @@ public:
 
 	static unique_ptr<ArrowArrayStreamWrapper>
 	Produce(uintptr_t factory_p, std::pair<std::unordered_map<idx_t, string>, std::vector<string>> &project_columns,
-	        TableFilterCollection *filters) {
+	        TableFilterSet *filters) {
 
 		RProtector r;
 		auto res = make_unique<ArrowArrayStreamWrapper>();
@@ -62,7 +65,7 @@ public:
 		} else {
 			auto projection_sexp = r.Protect(StringsToSexp(project_columns.second));
 			SEXP filters_sexp = r.Protect(Rf_ScalarLogical(true));
-			if (filters && filters->table_filters && !filters->table_filters->filters.empty()) {
+			if (filters && !filters->filters.empty()) {
 				auto timezone_config = ClientConfig::ExtractTimezoneFromConfig(factory->config);
 				filters_sexp =
 				    r.Protect(TransformFilter(*filters, project_columns.first, factory->export_fun, timezone_config));
@@ -162,14 +165,14 @@ private:
 		return conjunction_sexp;
 	}
 
-	static SEXP TransformFilter(TableFilterCollection &filter_collection, std::unordered_map<idx_t, string> &columns,
+	static SEXP TransformFilter(TableFilterSet &filter_collection, std::unordered_map<idx_t, string> &columns,
 	                            SEXP functions, string &timezone_config) {
 		RProtector r;
 
-		auto fit = filter_collection.table_filters->filters.begin();
+		auto fit = filter_collection.filters.begin();
 		SEXP res = r.Protect(TransformFilterExpression(*fit->second, columns[fit->first], functions, timezone_config));
 		fit++;
-		for (; fit != filter_collection.table_filters->filters.end(); ++fit) {
+		for (; fit != filter_collection.filters.end(); ++fit) {
 			SEXP rhs =
 			    r.Protect(TransformFilterExpression(*fit->second, columns[fit->first], functions, timezone_config));
 			res = r.Protect(CreateExpression(functions, "and_kleene", res, rhs));
