@@ -17,6 +17,20 @@ setClass("duckdb_result",
   )
 )
 
+#' @rdname duckdb_result-class
+#' @export
+setClass("duckdb_result_arrow",
+  contains = "DBIResultArrow",
+  slots = list(
+    connection = "duckdb_connection",
+    stmt_lst = "list",
+    env = "environment",
+    arrow = "logical",
+    query_result = "externalptr",
+    chunk_size = "numeric"
+  )
+)
+
 duckdb_result <- function(connection, stmt_lst, arrow) {
   env <- new.env(parent = emptyenv())
   env$rows_fetched <- 0
@@ -33,6 +47,24 @@ duckdb_result <- function(connection, stmt_lst, arrow) {
     } else {
       duckdb_execute(res)
     }
+  }
+
+
+  return(res)
+}
+
+duckdb_result_arrow <- function(connection, stmt_lst, chunk_size) {
+  env <- new.env(parent = emptyenv())
+  env$rows_fetched <- 0
+  env$open <- TRUE
+  env$rows_affected <- 0
+
+  res <- new("duckdb_result_arrow", connection = connection, stmt_lst = stmt_lst, env = env, arrow = TRUE, chunk_size = chunk_size)
+
+  if (stmt_lst$n_param == 0) {
+    query_result <- duckdb_execute(res)
+    new_res <- new("duckdb_result_arrow", connection = connection, stmt_lst = stmt_lst, env = env, arrow = TRUE, query_result = query_result, chunk_size = chunk_size)
+    return(new_res)
   }
 
 
