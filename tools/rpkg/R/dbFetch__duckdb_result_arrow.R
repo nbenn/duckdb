@@ -17,8 +17,11 @@ dbFetch__duckdb_result_arrow <- function(res, n = -1, ...) {
       assign("df_ptype", head(out, n = 0), envir = res@env)
     }
     if (is.null(out)) {
+      # technically too late; how to fix?
+      assign("is_complete", TRUE, envir = res@env)
       out <- res@env$df_ptype
     }
+    res@env$rows_fetched <- res@env$rows_fetched + nrow(out)
     return(out)
   }
 
@@ -32,10 +35,13 @@ dbFetch__duckdb_result_arrow <- function(res, n = -1, ...) {
     if (is.null(out)) {
       out <- res@env$df_ptype
     }
+    assign("is_complete", TRUE, envir = res@env)
     return(out)
   }
 
   out <- duckdb_fetch_arrow(res, res@chunk_size)
+  assign("is_complete", TRUE, envir = res@env)
+  res@env$rows_fetched <- res@env$rows_fetched + nrow(out)
 
   out
 }

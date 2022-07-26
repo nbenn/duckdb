@@ -8,7 +8,7 @@ dbGetRowsAffected__duckdb_result <- function(res, ...) {
   if (is.null(res@env$resultset)) {
     return(NA_integer_)
   }
-  return(res@env$rows_affected)
+  res@env$rows_affected
 }
 
 #' @rdname duckdb_result-class

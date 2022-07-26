@@ -2,17 +2,7 @@
 #' @inheritParams DBI::dbHasCompleted
 #' @usage NULL
 dbHasCompleted__duckdb_result_arrow <- function(res, ...) {
-  if (!res@env$open) {
-    stop("result has already been cleared")
-  }
-
-  if (is.null(res@env$resultset)) {
-    FALSE
-  } else if (res@stmt_lst$type == "SELECT") {
-    res@env$rows_fetched == nrow(res@env$resultset)
-  } else {
-    TRUE
-  }
+  exists("is_complete", envir = res@env) && isTRUE(res@env$is_complete)
 }
 
 #' @rdname duckdb_result-class

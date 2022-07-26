@@ -3,10 +3,12 @@
 %   R/dbClearResult__duckdb_result.R, R/dbClearResult__duckdb_result_arrow.R,
 %   R/dbColumnInfo__duckdb_result.R, R/dbFetch__duckdb_result.R,
 %   R/dbFetch__duckdb_result_arrow.R, R/dbGetInfo__duckdb_result.R,
-%   R/dbGetRowCount__duckdb_result.R, R/dbGetRowsAffected__duckdb_result.R,
-%   R/dbGetStatement__duckdb_result.R, R/dbHasCompleted__duckdb_result.R,
-%   R/dbHasCompleted__duckdb_result_arrow.R, R/dbIsValid__duckdb_result.R,
-%   R/show__duckdb_result.R
+%   R/dbGetRowCount__duckdb_result.R, R/dbGetRowCount__duckdb_result_arrow.R,
+%   R/dbGetRowsAffected__duckdb_result.R,
+%   R/dbGetRowsAffected__duckdb_result_arrow.R,
+%   R/dbGetStatement__duckdb_result.R, R/dbGetStatement__duckdb_result_arrow.R,
+%   R/dbHasCompleted__duckdb_result.R, R/dbHasCompleted__duckdb_result_arrow.R,
+%   R/dbIsValid__duckdb_result.R, R/show__duckdb_result.R
 \docType{class}
 \name{duckdb_result-class}
 \alias{duckdb_result-class}
@@ -30,10 +32,16 @@
 \alias{dbGetInfo,duckdb_result-method}
 \alias{dbGetRowCount__duckdb_result}
 \alias{dbGetRowCount,duckdb_result-method}
+\alias{dbGetRowCount__duckdb_result_arrow}
+\alias{dbGetRowCount,duckdb_result_arrow-method}
 \alias{dbGetRowsAffected__duckdb_result}
 \alias{dbGetRowsAffected,duckdb_result-method}
+\alias{dbGetRowsAffected__duckdb_result_arrow}
+\alias{dbGetRowsAffected,duckdb_result_arrow-method}
 \alias{dbGetStatement__duckdb_result}
 \alias{dbGetStatement,duckdb_result-method}
+\alias{dbGetStatement__duckdb_result_arrow}
+\alias{dbGetStatement,duckdb_result_arrow-method}
 \alias{dbHasCompleted__duckdb_result}
 \alias{dbHasCompleted,duckdb_result-method}
 \alias{dbHasCompleted__duckdb_result_arrow}
@@ -64,9 +72,15 @@ duckdb_fetch_record_batch(res, chunk_size = 1e+06)
 
 \S4method{dbGetRowCount}{duckdb_result}(res, ...)
 
+\S4method{dbGetRowCount}{duckdb_result_arrow}(res, ...)
+
 \S4method{dbGetRowsAffected}{duckdb_result}(res, ...)
 
+\S4method{dbGetRowsAffected}{duckdb_result_arrow}(res, ...)
+
 \S4method{dbGetStatement}{duckdb_result}(res, ...)
+
+\S4method{dbGetStatement}{duckdb_result_arrow}(res, ...)
 
 \S4method{dbHasCompleted}{duckdb_result}(res, ...)
 

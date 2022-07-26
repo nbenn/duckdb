@@ -10,21 +10,34 @@ test_that("dbFetch() test table over vector size", {
 
   dbExecute(con, paste0("CREATE table test as select range a from range(10000);"))
   dbExecute(con, "INSERT INTO  test VALUES(NULL);")
+
   res <- dbSendQueryArrow(con, "SELECT * FROM test", chunk_size = 5000)
 
   expect_s4_class(res, "duckdb_result_arrow")
+  expect_identical(dbGetStatement(res), "SELECT * FROM test")
+  expect_false(dbHasCompleted(res))
+  expect_equal(dbGetRowsAffected(res), 0)
+  expect_equal(dbGetRowCount(res), 0)
 
   rb_all <- dbFetch(res)
 
   expect_s3_class(rb_all, "Table")
   expect_equal(nrow(rb_all), 10001)
+  expect_true(dbHasCompleted(res))
+  expect_equal(dbGetRowsAffected(res), 0)
+  expect_equal(dbGetRowCount(res), nrow(rb_all))
 
   res <- dbSendQueryArrow(con, "SELECT * FROM test", chunk_size = 5000)
 
   rb_batches <- list()
+  row_count <- 0
 
   while(TRUE) {
+    expect_false(dbHasCompleted(res))
+    expect_equal(dbGetRowCount(res), row_count)
     tmp <- dbFetch(res, n = NA)
+    row_count <- row_count + nrow(tmp)
+    expect_equal(dbGetRowCount(res), row_count)
     if (nrow(tmp)) rb_batches <- c(rb_batches, tmp)
     else break
   }
@@ -32,6 +45,8 @@ test_that("dbFetch() test table over vector size", {
   expect_is(rb_batches, "list")
   expect_gte(length(rb_batches), 1L)
   expect_equal(sum(vapply(rb_batches, nrow, numeric(1L))), 10001)
+  expect_equal(dbGetRowCount(res), 10001)
+  expect_true(dbHasCompleted(res))
 
   for (x in rb_batches) {
     expect_s3_class(x, "RecordBatch")
@@ -41,8 +56,11 @@ test_that("dbFetch() test table over vector size", {
 
   res <- dbSendQueryArrow(con, "SELECT * FROM test", chunk_size = 5000)
 
+  expect_false(dbHasCompleted(res))
   rb_1 <- dbFetch(res, n = NA)
+  expect_false(dbHasCompleted(res))
   rb_2 <- dbFetch(res)
+  expect_true(dbHasCompleted(res))
 
   expect_s3_class(rb_1, "RecordBatch")
   expect_s3_class(rb_2, "Table")
